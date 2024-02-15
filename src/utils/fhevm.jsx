@@ -1,4 +1,4 @@
-import { JsonProvider, AbiCoder } from "ethers";
+import { JsonRpcProvider, AbiCoder } from "ethers";
 import { initFhevm, createInstance } from "fhevmjs";
 export const init = async () => {
   await initFhevm();
@@ -7,7 +7,7 @@ export const init = async () => {
 // From https://github.com/zama-ai/fhevmjs/blob/c4b8a80a8783ef965973283362221e365a193b76/bin/fhevm.js#L9
 const FHE_LIB_ADDRESS = "0x000000000000000000000000000000000000005d";
 
-export const provider = new JsonProvider('https://testnet.inco.org');
+export const provider = new JsonRpcProvider('https://testnet.inco.org');
 
 let instance;
 
