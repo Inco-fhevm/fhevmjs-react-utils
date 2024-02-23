@@ -26,7 +26,6 @@ export const WalletProvider = ({ children }) => {
 
     const hasValidNetwork = async () => {
         const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-        console.log('hasValidNetwork', chainId, AUTHORIZED_CHAIN_ID.includes(chainId.toLowerCase()))
         return AUTHORIZED_CHAIN_ID.includes(chainId.toLowerCase());
     };
 
@@ -44,7 +43,6 @@ export const WalletProvider = ({ children }) => {
     }, [hasValidNetwork]);
 
     const switchNetwork = useCallback(async () => {
-        console.log('called switchNetwork')
         try {
             await window.ethereum.request({
                 method: "wallet_switchEthereumChain",
@@ -67,7 +65,6 @@ export const WalletProvider = ({ children }) => {
             setConnected(true);
             const isValidNetwork = await hasValidNetwork();
             if (!isValidNetwork) {
-                console.log('provider', provider, isValidNetwork)
                 await switchNetwork();
             } else {
                 await refreshNetwork();
@@ -100,7 +97,6 @@ export const WalletProvider = ({ children }) => {
             setError("No wallet has been found");
             return;
         }
-        console.log(eth)
         setProvider(new BrowserProvider(eth));
         refreshAccounts();
     }, []);

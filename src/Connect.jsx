@@ -9,7 +9,7 @@ export const ConnectWallet = () => {
         <div>
             {/*{connecting && <Connecting/>}*/}
             {!connected && !connecting && <Connect/>}
-            {!validNetwork && <SwitchNetwork/>}
+            {connected && !validNetwork && <SwitchNetwork/>}
             {!connected && !connecting && !validNetwork && error && <Error/>}
         </div>
     );
