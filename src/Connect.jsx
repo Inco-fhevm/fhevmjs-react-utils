@@ -1,148 +1,83 @@
-import { BrowserProvider } from "ethers";
-import { createFhevmInstance } from "./utils/fhevm";
-import { useState, useCallback, useEffect, useMemo, React } from "react";
+import React, { useContext } from "react";
+import WalletContext from "./WalletContext.jsx";
+import { ArrowTopRight } from "./ArrowTopRight";
 
-const AUTHORIZED_CHAIN_ID = [ "0x2382", "0x2383"]; // 9090, 9091
 
-export const Connect = ({ children }) => {
-  const [connected, setConnected] = useState(false);
-  const [validNetwork, setValidNetwork] = useState(false);
-  const [account, setAccount] = useState("");
-  const [error, setError] = useState(null);
-  const [provider, setProvider] = useState(null);
-
-  const refreshAccounts = (accounts) => {
-    setAccount(accounts[0] || "");
-    setConnected(accounts.length > 0);
-  };
-
-  const hasValidNetwork = async () => {
-    const currentChainId = await window.ethereum.request({
-      method: "eth_chainId",
-    });
-    return AUTHORIZED_CHAIN_ID.includes(currentChainId.toLowerCase());
-  };
-
-  const refreshNetwork = useCallback(async () => {
-    if (await hasValidNetwork()) {
-      await createFhevmInstance();
-      setValidNetwork(true);
-    } else {
-      setValidNetwork(false);
-    }
-  }, []);
-
-  const refreshProvider = (eth) => {
-    const p = new BrowserProvider(eth);
-    setProvider(p);
-    return p;
-  };
-
-  useEffect(() => {
-    const eth = window.ethereum;
-    if (!eth) {
-      setError("No wallet has been found");
-      return;
-    }
-
-    const p = refreshProvider(eth);
-
-    p.send("eth_accounts", [])
-      .then(async (accounts) => {
-        refreshAccounts(accounts);
-        await refreshNetwork();
-      })
-      .catch(() => {
-        // Do nothing
-      });
-    eth.on("accountsChanged", refreshAccounts);
-    eth.on("chainChanged", refreshNetwork);
-  }, [refreshNetwork]);
-
-  const connect = async () => {
-    if (!provider) {
-      return;
-    }
-    const accounts = await provider.send("eth_requestAccounts", []);
-
-    if (accounts.length > 0) {
-      setAccount(accounts[0]);
-      setConnected(true);
-      if (!(await hasValidNetwork())) {
-        await switchNetwork();
-      }
-    }
-  };
-
-  const switchNetwork = useCallback(async () => {
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: AUTHORIZED_CHAIN_ID[0] }],
-      });
-    } catch (e) {
-      await window.ethereum.request({
-        method: "wallet_addEthereumChain",
-        params: [
-          {
-            chainId: AUTHORIZED_CHAIN_ID[0],
-            rpcUrls: ["https://testnet.inco.org"],
-            chainName: "Inco Gentry Testnet",
-            nativeCurrency: {
-              name: "INCO",
-              symbol: "INCO",
-              decimals: 18,
-            },
-            blockExplorerUrls: ["https://explorer.testnet.inco.org/"],
-          },
-        ],
-      });
-    }
-    await refreshNetwork();
-  }, [refreshNetwork]);
-
-  const child = useMemo(() => {
-    if (!account || !provider) {
-      return null;
-    }
-
-    if (!validNetwork) {
-      return (
+export const ConnectWallet = () => {
+    const { connected, connecting, validNetwork, error } = useContext(WalletContext);
+    return (
         <div>
-          <p>You're not on the correct network</p>
-          <p>
-            <button className="Connect__button" onClick={switchNetwork}>
-              Switch to Inco Gentry Testnet
-            </button>
-          </p>
+            {/*{connecting && <Connecting/>}*/}
+            {!connected && !connecting && <Connect/>}
+            {connected && !validNetwork && <SwitchNetwork/>}
+            {!connected && !connecting && !validNetwork && error && <Error/>}
         </div>
-      );
-    }
-
-    return children(account, provider);
-  }, [account, provider, validNetwork, children, switchNetwork]);
-
-  if (error) {
-    return <p>No wallet has been found.</p>;
-  }
-
-  const connectInfos = (
-    <div className="Connect__info">
-      {!connected && (
-        <button className="Connect__button" onClick={connect}>
-          Connect your wallet
-        </button>
-      )}
-      {connected && (
-        <div className="Connect__account">Connected with {account}</div>
-      )}
-    </div>
-  );
-
-  return (
-    <>
-      {connectInfos}
-      <div className="Connect__child">{child}</div>
-    </>
-  );
+    );
 };
+
+const Image = () => (
+    <div className={'m-auto sm:w-[420px] w-full h-[240px]'}>
+        <img src={'./mosaic.png'} alt={'hero'} className={''}/>
+    </div>
+)
+
+const Connect = () => {
+    const {
+        connect,
+        addIncoTestnet
+    } = useContext(WalletContext);
+
+    return (
+        <div className={'flex items-center justify-center w-full h-full'}>
+            <div className={'flex flex-col mx-auto sm:mt-[10%] sm:w-[560px] sm:p-0 p-3 w-full'}>
+                <Image/>
+                <button className={'w-full px-8 py-4 mt-[60px]'} onClick={connect}>
+                    Connect your wallet
+                </button>
+                <div className={'mt-10 self-center inline flex flex-row hover:cursor-pointer'} onClick={addIncoTestnet}>
+                    <span className={'text-blue'}>
+                        Add Inco Testnet
+                    </span>
+                    <span className={'ml-2'}><ArrowTopRight/> </span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+const SwitchNetwork = () => {
+    const {
+        switchNetwork
+    } = useContext(WalletContext);
+
+    return (
+        <div className={'flex items-center justify-center w-full h-full'}>
+            <div className={'flex flex-col mx-auto sm:mt-[10%] sm:w-[560px] sm:p-0 p-3 w-full'}>
+                <Image/>
+                <div className={'text-green self-center font-urb text-4xl font-bold mt-[60px] leading-tight'}>
+                    Please connect to Inco Testnet
+                </div>
+                <div className={'mt-10 self-center inline flex flex-row hover:cursor-pointer'} onClick={switchNetwork}>
+                    <span className={'text-blue'}>
+                        Switch to Inco Testnet
+                    </span>
+                    <span className={'ml-2'}><ArrowTopRight/> </span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+
+const Error = () => {
+    return (
+        <div className={'flex items-center justify-center w-full h-full'}>
+            <div className={'flex flex-col mx-auto sm:mt-[10%] sm:w-[560px] sm:p-0 p-3 w-full'}>
+                <Image/>
+                <div className={'text-green self-center font-urb text-4xl font-bold mt-[60px] leading-tight'}>
+                    No wallet has been found.
+                </div>
+            </div>
+        </div>
+    )
+}
